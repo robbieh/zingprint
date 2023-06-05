@@ -1,5 +1,7 @@
-#!/home/robbie/bin/bb
-(ns zing.test)
+#!/usr/bin/env bb
+;(ns zingprint.zingprint)
+
+;ANSI escape codes: https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 
 (def esc (char 27))
 (def home (char 13))
@@ -19,9 +21,10 @@
 ;cursor position?
 ;(print (str esc "[6n"))
 
-
 (defn pos [x y]
   (str esc "[" x ";" y "H"))
+
+;from https://pleac.sourceforge.net/pleac_clojure/strings.html
 (defn expand-str [s]
   (loop [s s]
     (let [m (re-matcher #"\t+" s)
@@ -36,10 +39,10 @@
                       after-tabs)))
         s))))
 
-(defn zingprint [^String s]
+(defn zingprint-zinger [^String s]
   (let [s (expand-str s)
         l (count s)
-        pause 20;(/ 500 l)
+        pause 10;(/ 500 l)
         zstr (str hh c0M)
         zlen (count zstr)
         ]
@@ -73,11 +76,23 @@
 ;(print cls mtl)
 ;(zingprint-dots "this is a test with a big long string")
 ;(println)
+
 ;(zingprint-dots "this is a test with a big long string even longer than before it's REALLY long wheeeee!")
+
+;restore cursor in case of CTRL-C
+(-> (Runtime/getRuntime)
+  (.addShutdownHook (Thread. #(println cursor-on))))
+
+(def zingprint 
+  (case (System/getenv "ZINGPRINT_MODE")
+    "zinger" zingprint-zinger
+    "dots"   zingprint-dots
+    (rand-nth [zingprint-zinger zingprint-dots])))
 
 (print cursor-off)
 (doseq [line (line-seq (clojure.java.io/reader *in*))]
-  (zingprint-dots line)
+  (zingprint line)
   (println)
   )
 (print cursor-on)
+
